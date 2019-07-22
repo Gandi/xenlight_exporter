@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/xen-project/xen/tools/golang/xenlight"
+	"xenbits.xen.org/git-http/xen.git/tools/golang/xenlight"
 )
 
 var (
