@@ -7,8 +7,6 @@ import (
 	"strconv"
 )
 
-//version_info
-
 var (
 	domCpuTimeDesc = prometheus.NewDesc(
 		"xen_domain_cpu_time_total",

@@ -5,17 +5,6 @@ import (
 	"github.com/xen-project/xen/tools/golang/xenlight"
 )
 
-/*
-domain_cpu_time_total
-domain_vcpu_time_total
-domain_memory_max_bytes
-domain_memory_current_bytes
-domain_memory_outstanding_bytes
-domain_cpu_count
-domain_cpu_online_count
-
-version_info
-*/
 var (
 	physTopologyNodesDesc = prometheus.NewDesc(
 		"xen_physical_topology_nodes_number",
