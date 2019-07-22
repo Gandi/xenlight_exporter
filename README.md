@@ -37,7 +37,7 @@ Flags:
 The Go bindings are expected to be imported (according to Xen makefiles) using
 the following import path: `golang.xenproject.org/xenlight`. However the domain
 `golang.xenproject.org` doesn't exists (thus not allowing the use of Go modules)
-so I chose to import the bindings from their Github mirror of the repository.
+so I chose to import the bindings from their official repository.
 
-Would the situation evolve and the Xen project provide an usable import path, I
-will reconsider this choice and switch to its official import path.
+Would the situation evolve and the Xen project provide an universally usable import path,
+I will reconsider this choice and switch to its official import path.
