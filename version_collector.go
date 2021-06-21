@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	"xenbits.xen.org/git-http/xen.git/tools/golang/xenlight"
 	"strconv"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight"
 )
 
 var (
@@ -22,23 +23,34 @@ var (
 	)
 )
 
-type VersionCollector struct{}
-
-func init() {
-	registerCollector("version", defaultEnabled, NewVersionCollector)
+type VersionCollector struct {
+	xenCtx *xenlight.Context
 }
 
-func NewVersionCollector() prometheus.Collector {
-	return &VersionCollector{}
+func NewVersionCollector(ctx *xenlight.Context) XenPromCollector {
+	return &VersionCollector{
+		xenCtx: ctx,
+	}
 }
 
-func (collector VersionCollector) Describe(ch chan<- *prometheus.Desc) {
-	prometheus.DescribeByCollect(collector, ch)
+func (VersionCollector) Name() string {
+	return "version"
 }
 
-func (collector VersionCollector) Collect(ch chan<- prometheus.Metric) {
-	xenlight.Ctx.Open()
-	versinfo, err := xenlight.Ctx.GetVersionInfo()
+func (VersionCollector) DefaultEnabled() bool {
+	return true
+}
+
+func (c *VersionCollector) PromCollector() prometheus.Collector {
+	return c
+}
+
+func (c VersionCollector) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(c, ch)
+}
+
+func (c VersionCollector) Collect(ch chan<- prometheus.Metric) {
+	versinfo, err := c.xenCtx.GetVersionInfo()
 	if err != nil {
 		return
 	}

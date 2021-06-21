@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
-	"xenbits.xen.org/git-http/xen.git/tools/golang/xenlight"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"strconv"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"gopkg.in/alecthomas/kingpin.v2"
+	"xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight"
 )
 
 var (
@@ -49,26 +50,36 @@ var (
 	).Default("false").Bool()
 )
 
-type DomainCollector struct{}
-
-func init() {
-	registerCollector("domain", defaultEnabled, NewDomainCollector)
+type DomainCollector struct {
+	xenCtx *xenlight.Context
 }
 
-func NewDomainCollector() prometheus.Collector {
-	return &DomainCollector{}
+func NewDomainCollector(ctx *xenlight.Context) XenPromCollector {
+	return &DomainCollector{
+		xenCtx: ctx,
+	}
 }
 
-func (collector DomainCollector) Describe(ch chan<- *prometheus.Desc) {
-	prometheus.DescribeByCollect(collector, ch)
+func (DomainCollector) Name() string {
+	return "domain"
 }
 
-func (collector DomainCollector) Collect(ch chan<- prometheus.Metric) {
-	xenlight.Ctx.Open()
+func (DomainCollector) DefaultEnabled() bool {
+	return true
+}
 
-	dominfos := xenlight.Ctx.ListDomain()
+func (c *DomainCollector) PromCollector() prometheus.Collector {
+	return c
+}
+
+func (c DomainCollector) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(c, ch)
+}
+
+func (c DomainCollector) Collect(ch chan<- prometheus.Metric) {
+	dominfos := c.xenCtx.ListDomain()
 	for _, dominfo := range dominfos {
-		domName := xenlight.Ctx.DomidToName(dominfo.Domid)
+		domName := c.xenCtx.DomidToName(dominfo.Domid)
 		ch <- prometheus.MustNewConstMetric(
 			domCpuCountDesc,
 			prometheus.GaugeValue,
@@ -84,16 +95,16 @@ func (collector DomainCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			domCpuTimeDesc,
 			prometheus.CounterValue,
-			dominfo.CpuTime.Seconds(),
+			float64(dominfo.CpuTime),
 			domName,
 		)
 		if *domVcpuShowDetails {
-			vcpus := xenlight.Ctx.ListVcpu(dominfo.Domid)
+			vcpus := c.xenCtx.ListVcpu(dominfo.Domid)
 			for _, vcpu := range vcpus {
 				ch <- prometheus.MustNewConstMetric(
 					domVcpuTimeDesc,
 					prometheus.CounterValue,
-					vcpu.VCpuTime.Seconds(),
+					float64(vcpu.VcpuTime),
 					domName, strconv.FormatUint(uint64(vcpu.Vcpuid), 10),
 				)
 			}

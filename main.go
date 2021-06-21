@@ -2,18 +2,28 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+
+	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/log"
+	"github.com/prometheus/common/promlog"
+	"github.com/prometheus/common/promlog/flag"
 	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"net/http"
+	"xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight"
 )
 
-const (
-	defaultEnabled  = true
-	defaultDisabled = false
-)
+func init() {
+	ctx, err := xenlight.NewContext()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	registerCollector(NewDomainCollector(ctx))
+	registerCollector(NewPhysicalCollector(ctx))
+	registerCollector(NewVersionCollector(ctx))
+}
 
 type registeredCollector struct {
 	enabled *bool
@@ -22,9 +32,9 @@ type registeredCollector struct {
 
 var availableCollectors = make([]registeredCollector, 0)
 
-func registerCollector(collector string, enabled bool, factory func() prometheus.Collector) {
+func registerCollector(collector XenPromCollector) {
 	var helpDefaultState string
-	if enabled {
+	if collector.DefaultEnabled() {
 		helpDefaultState = "enabled"
 	} else {
 		helpDefaultState = "disabled"
@@ -32,12 +42,12 @@ func registerCollector(collector string, enabled bool, factory func() prometheus
 
 	flagName := fmt.Sprintf("collector.%s", collector)
 	flagHelp := fmt.Sprintf("Enable the %s collector (default: %s).", collector, helpDefaultState)
-	defaultValue := fmt.Sprintf("%v", enabled)
+	defaultValue := fmt.Sprintf("%t", collector.DefaultEnabled())
 
 	flag := kingpin.Flag(flagName, flagHelp).Default(defaultValue).Bool()
 	availableCollectors = append(availableCollectors, registeredCollector{
 		enabled: flag,
-		factory: factory,
+		factory: collector.PromCollector,
 	})
 }
 
@@ -47,10 +57,14 @@ func main() {
 		metricsPath   = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
 	)
 
-	log.AddFlags(kingpin.CommandLine)
+	logCfg := new(promlog.Config)
+	flag.AddFlags(kingpin.CommandLine, logCfg)
+
 	kingpin.Version(version.Print("xenlight_exporter"))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
+
+	logger := promlog.New(logCfg)
 
 	reg := prometheus.NewPedanticRegistry()
 	reg.MustRegister(
@@ -73,11 +87,11 @@ func main() {
 			</body>
 			</html>`))
 		if err != nil {
-			log.Errorln(err)
+			level.Error(logger).Log(err)
 		}
 	})
 
-	log.Infoln("Listening on", *listenAddress)
-	log.Fatal(http.ListenAndServe(*listenAddress, nil))
+	level.Info(logger).Log("Listening on", *listenAddress)
+	level.Error(logger).Log(http.ListenAndServe(*listenAddress, nil))
 
 }

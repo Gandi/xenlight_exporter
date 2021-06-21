@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"xenbits.xen.org/git-http/xen.git/tools/golang/xenlight"
+	"xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight"
 )
 
 var (
@@ -43,27 +43,38 @@ var (
 	)
 )
 
-type PhysicalCollector struct{}
-
-func init() {
-	registerCollector("physical", defaultEnabled, NewPhysicalCollector)
+type PhysicalCollector struct {
+	xenCtx *xenlight.Context
 }
 
-func NewPhysicalCollector() prometheus.Collector {
-	return &PhysicalCollector{}
+func NewPhysicalCollector(ctx *xenlight.Context) XenPromCollector {
+	return &PhysicalCollector{
+		xenCtx: ctx,
+	}
 }
 
-func (collector PhysicalCollector) Describe(ch chan<- *prometheus.Desc) {
-	prometheus.DescribeByCollect(collector, ch)
+func (PhysicalCollector) Name() string {
+	return "physical"
 }
 
-func (collector PhysicalCollector) Collect(ch chan<- prometheus.Metric) {
-	xenlight.Ctx.Open()
-	physinfo, err := xenlight.Ctx.GetPhysinfo()
+func (PhysicalCollector) DefaultEnabled() bool {
+	return true
+}
+
+func (c *PhysicalCollector) PromCollector() prometheus.Collector {
+	return c
+}
+
+func (c PhysicalCollector) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(c, ch)
+}
+
+func (c PhysicalCollector) Collect(ch chan<- prometheus.Metric) {
+	physinfo, err := c.xenCtx.GetPhysinfo()
 	if err != nil {
 		return
 	}
-	versinfo, err := xenlight.Ctx.GetVersionInfo()
+	versinfo, err := c.xenCtx.GetVersionInfo()
 	if err != nil {
 		return
 	}
