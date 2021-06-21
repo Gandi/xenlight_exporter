@@ -10,6 +10,17 @@ go get -u github.com/Gandi/xenlight_exporter
 You need `xen` headers as well as `yajl` headers to be able to compile xenlight go
 bindings
 
+## Dockerfile
+You can build the binary on an arbitrary machine using the dockerfile. 
+```
+docker build -t xenlight-exporter .
+```
+
+To build it for a xen version other than 4.14 you have to replace the dnf package in the dockerfile and update the `go.mod` file.
+```
+go get xenbits.xenproject.org/git-http/xen.git/tools/golang/xenlight@RELEASE-4.14.0
+```
+
 ## Usage
 
 ```
