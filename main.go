@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	collect "github.com/gandi/xenlight_exporter/pkg/collectors"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -20,9 +21,9 @@ func init() {
 		panic(err.Error())
 	}
 
-	registerCollector(NewDomainCollector(ctx))
-	registerCollector(NewPhysicalCollector(ctx))
-	registerCollector(NewVersionCollector(ctx))
+	registerCollector(collect.NewDomainCollector(ctx))
+	registerCollector(collect.NewPhysicalCollector(ctx))
+	registerCollector(collect.NewVersionCollector(ctx))
 }
 
 type registeredCollector struct {
@@ -32,7 +33,7 @@ type registeredCollector struct {
 
 var availableCollectors = make([]registeredCollector, 0)
 
-func registerCollector(collector XenPromCollector) {
+func registerCollector(collector collect.XenPromCollector) {
 	var helpDefaultState string
 	if collector.DefaultEnabled() {
 		helpDefaultState = "enabled"
